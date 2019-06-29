@@ -1,0 +1,40 @@
+- hosts: nextcloud_server
+  vars:
+    certbot_auto_renew: true
+    certbot_auto_renew_options: "--quiet --no-self-upgrade"
+    certbot_create_if_missing: true
+    certbot_admin_email: "{{ email }}"
+    certbot_create_standalone_stop_services: ['nginx']
+    certbot_auto_renew_user: root
+    certbot_certs:
+      - domains:
+          - "{{ inventory_hostname }}"
+    nginx_remove_default_vhost: false
+    nginx_upstreams:
+      - name: php-handler
+        servers: { "127.0.0.1:9000" }
+    nextcloud_dns_name: "{{ inventory_hostname }}"
+    nginx_vhosts:
+      - template: nextcloud.conf
+        server_name: "{{ inventory_hostname }}"
+  become: true
+  roles:
+    - geerlingguy.nginx
+    - geerlingguy.certbot
+    - geerlingguy.docker
+
+  tasks:
+    - name: Install python3-docker
+      apt:
+        name: python3-docker
+
+    - name: Nextcloud
+      docker_container:
+        name: nextcloud
+        restart_policy: always
+        restart: yes
+        ports:
+          - "127.0.0.1:9000:9000/tcp"
+        image: nextcloud:stable-fpm
+        volumes:
+          - /var/www/html:/var/www/html
