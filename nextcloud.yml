@@ -1,7 +1,7 @@
 - hosts: nextcloud_server
   vars:
     certbot_auto_renew: true
-    certbot_auto_renew_options: "--quiet --no-self-upgrade"
+    certbot_auto_renew_options: "--quiet"
     certbot_create_if_missing: true
     certbot_admin_email: "{{ email }}"
     certbot_create_standalone_stop_services: ['nginx']
@@ -28,13 +28,41 @@
       apt:
         name: python3-docker
 
-    - name: Nextcloud
+    - name: "Create nextcloud network"
+      community.docker.docker_network:
+        name: "nextcloud"
+
+    - name: "Nextcloud container"
       docker_container:
         name: nextcloud
         restart_policy: always
         restart: yes
         ports:
           - "127.0.0.1:9000:9000/tcp"
-        image: nextcloud:stable-fpm
+        image: "nextcloud:28.0-fpm"
+        env:
+          POSTGRES_DB: nextcloud
+          POSTGRES_USER: nextcloud
+          POSTGRES_PASSWORD: "{{ postgres_pass }}"
+          POSTGRES_HOST: "postgres"
+          NEXTCLOUD_DATA_DIR: "/var/www/html/data"
         volumes:
           - /var/www/html:/var/www/html
+        networks:
+          - name: "nextcloud"
+
+    - name: "Postgres container"
+      docker_container:
+        name: postgres
+        restart_policy: always
+        restart: yes
+        image: "postgres:16.2"
+        env:
+          PGDATA: /var/lib/postgresql/data/pgdata
+          POSTGRES_PASSWORD: "{{ postgres_pass }}"
+          POSTGRES_USER: nextcloud
+          POSTGRES_DB: nextcloud
+        volumes:
+          - /var/lib/postgresql/data/:/var/lib/postgresql/data/
+        networks:
+        - name: "nextcloud"

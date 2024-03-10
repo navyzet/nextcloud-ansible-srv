@@ -1,11 +1,10 @@
 #Ansible script install [nextcloud server](https://nextcloud.com/ "nextcloud server")
 
-Tested ubuntu 18.04
+Tested on Ubuntu 22.04.3 LTS
 
 Installation:
 
-- Edit inventory_example file.
 - Run:
 
         ansible-galaxy install geerlingguy.nginx geerlingguy.certbot geerlingguy.docker
-        ansible-playbook -D nextcloud.yml -i inventory_example
+        ansible-playbook -D nextcloud.yml -i inventory --ask-vault-password
