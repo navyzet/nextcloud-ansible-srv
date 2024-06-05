@@ -6,5 +6,5 @@ Installation:
 
 - Run:
 
-        ansible-galaxy install geerlingguy.nginx geerlingguy.certbot geerlingguy.docker
+        ansible-galaxy install geerlingguy.nginx geerlingguy.certbot geerlingguy.docker  --force
         ansible-playbook -D nextcloud.yml -i inventory --ask-vault-password
