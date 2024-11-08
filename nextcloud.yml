@@ -6,17 +6,24 @@
     certbot_admin_email: "{{ email }}"
     certbot_create_standalone_stop_services: ['nginx']
     certbot_auto_renew_user: root
+    certbot_create_extra_args: ''
     certbot_certs:
       - domains:
           - "{{ inventory_hostname }}"
+      - domains:
+          - "vpn.navyzet.com"
     nginx_remove_default_vhost: false
     nginx_upstreams:
       - name: php-handler
         servers: { "127.0.0.1:9000" }
+      - name: wg-easy
+        servers: { "127.0.0.1:51821" }
     nextcloud_dns_name: "{{ inventory_hostname }}"
     nginx_vhosts:
       - template: nextcloud.conf
         server_name: "{{ inventory_hostname }}"
+      - template: wg-easy.conf
+        server_name: vpn.navyzet.com
   become: true
   roles:
     - geerlingguy.nginx
@@ -66,3 +73,29 @@
           - /var/lib/postgresql/data/:/var/lib/postgresql/data/
         networks:
         - name: "nextcloud"
+
+    - name: "Wireguard container"
+      tags:
+        - wg
+      docker_container:
+        name: wg-easy
+        restart_policy: always
+        restart: yes
+        ports:
+          - "34821:34821/udp"
+          - "127.0.0.1:51821:51821/tcp"
+        image: "ghcr.io/wg-easy/wg-easy:latest"
+        env:
+          LANG: "ru"
+          WG_HOST: "vpn.navyzet.com"
+          PASSWORD_HASH: "{{ wg_easy_password }}"
+          WG_PORT: "34821"
+          WG_ALLOWED_IPS: "0.0.0.0/0"
+        volumes:
+          - /etc/wireguard:/etc/wireguard
+        capabilities:
+          - net_admin
+          - sys_module
+        sysctls:
+          net.ipv4.ip_forward: 1
+          net.ipv4.conf.all.src_valid_mark: 1
